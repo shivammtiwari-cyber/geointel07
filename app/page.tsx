@@ -1,13 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Header } from '../components/Header';
 import { Ticker } from '../components/Ticker';
-import { WorldMap } from '../components/WorldMap';
 import { NewsFeed } from '../components/NewsFeed';
 import { RedlineMonitor } from '../components/RedlineMonitor';
 import { fetchNews, NewsStory, calculateRegionalIntensity } from '../lib/news';
 import { Globe, Shield, Zap, Info, ShieldAlert } from 'lucide-react';
+
+const WorldMap = dynamic(() => import('../components/WorldMap').then(mod => mod.WorldMap), { 
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-full bg-slate-950/20 rounded-lg border border-border/50 animate-pulse flex items-center justify-center text-primary/50 text-xs font-mono">
+            ESTABLISHING SECURE SATELLITE UPLINK...
+        </div>
+    )
+});
 
 export default function Home() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
