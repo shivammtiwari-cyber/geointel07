@@ -78,7 +78,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ onSelectCountry, intensities
                 </radialGradient>
             </defs>
 
-            <Sphere stroke="#334155" strokeWidth={0.5} fill="transparent" />
+            <Sphere id="rsm-sphere" stroke="#334155" strokeWidth={0.5} fill="transparent" />
             <Graticule stroke="#1e293b" strokeWidth={0.5} />
             <Geographies geography={geoData}>
             {({ geographies }) =>
