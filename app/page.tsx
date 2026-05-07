@@ -84,13 +84,13 @@ export default function Home() {
         </aside>
 
         {/* Tactical Display Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           <div className="flex-1 p-6 flex flex-col gap-6 relative">
-            <div className="flex-1 min-h-[400px]">
+            <div className="flex-none h-[400px] lg:flex-1">
               <WorldMap onSelectCountry={setSelectedRegion} intensities={intensities} />
             </div>
             
-            <div className="h-1/3 glass rounded-lg flex flex-col overflow-hidden">
+            <div className="min-h-[250px] flex-shrink-0 glass rounded-lg flex flex-col overflow-hidden">
               <div className="px-4 py-2 border-b border-border bg-slate-900/80 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="text-primary" size={16} />

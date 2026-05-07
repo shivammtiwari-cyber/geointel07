@@ -87,8 +87,7 @@ export async function fetchNews(region?: string | null): Promise<NewsStory[]> {
     console.error("Global RSS error:", error);
   }
 
-  // 2. Fetch from NewsAPI
-  if (apiKey) {
+  if (apiKey && apiKey !== "paste_your_api_key_here") {
     try {
       const q = region ? `geopolitics ${region}` : 'geopolitics conflict diplomacy';
       const response = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&language=en&sortBy=publishedAt&apiKey=${apiKey}`);
@@ -109,7 +108,9 @@ export async function fetchNews(region?: string | null): Promise<NewsStory[]> {
     } catch (error) {
       console.error("NewsAPI fetch error:", error);
     }
-  } else if (allStories.length === 0) {
+  }
+  
+  if (allStories.length === 0) {
     allStories = MOCK_NEWS;
   }
 
