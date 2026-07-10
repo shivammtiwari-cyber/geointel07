@@ -5,9 +5,22 @@ import dynamic from 'next/dynamic';
 import { Header } from '../components/Header';
 import { Ticker } from '../components/Ticker';
 import { NewsFeed } from '../components/NewsFeed';
+import { CyberFeed } from '../components/CyberFeed';
+import { SpaceFeed } from '../components/SpaceFeed';
 import { RedlineMonitor } from '../components/RedlineMonitor';
 import { fetchNews, NewsStory, calculateRegionalIntensity } from '../lib/news';
-import { Globe, Shield, Zap, Info, ShieldAlert } from 'lucide-react';
+import { audioAlerts } from '../lib/audio';
+import { 
+  generateInitialCyberLogs, 
+  generateCyberLog, 
+  updateSatelliteTelemetry, 
+  SatelliteTelemetry, 
+  CyberLog, 
+  SpaceWeather, 
+  INITIAL_SATELLITES, 
+  MOCK_SPACE_WEATHER 
+} from '../lib/multidomain';
+import { Globe, Shield, Zap, Info, ShieldAlert, Terminal, Radio } from 'lucide-react';
 
 const WorldMap = dynamic(() => import('../components/WorldMap').then(mod => mod.WorldMap), { 
     ssr: false,
@@ -24,12 +37,90 @@ export default function Home() {
   const [intensities, setIntensities] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
-  const tickerItems = [
-    "UN Security Council meeting scheduled for 0900Z regarding maritime dispute",
-    "Global crude futures surge 2.4% following supply chain disruptions in Hormuz",
-    "Diplomatic breakthrough reported in Alpine borders; ceasefire extended",
-    "Intelligence alert: Increased cyber activity detected from Eastern sector"
-  ];
+  // Multi-Domain Operations Feed States
+  const [activeTab, setActiveTab] = useState<'geopolitical' | 'cyber' | 'space'>('geopolitical');
+  const [cyberLogs, setCyberLogs] = useState<CyberLog[]>([]);
+  const [satellites, setSatellites] = useState<SatelliteTelemetry[]>(INITIAL_SATELLITES);
+  const [spaceWeather, setSpaceWeather] = useState<SpaceWeather>(MOCK_SPACE_WEATHER);
+
+  const getDynamicTickerItems = () => {
+    if (activeTab === 'cyber') {
+      if (cyberLogs.length === 0) return ["NO ACTIVE CYBER INCIDENTS DETECTED"];
+      return cyberLogs.slice(0, 8).map(log => {
+        const timeStr = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        return `[${timeStr}] CYBER ALERT: ${log.vector} targeting ${log.targetNode} status is ${log.status} (SEVERITY: ${log.severity})`;
+      });
+    }
+
+    if (activeTab === 'space') {
+      const weatherStr = `[SPACE WEATHER] Solar Flare: ${spaceWeather.solarFlareLevel} | Geomagnetic: ${spaceWeather.geomagneticIndex} | Radiation Belt: ${spaceWeather.radiationBelt}`;
+      const satStrs = satellites.map(sat => {
+        return `[TELEMETRY] ${sat.name} orbital uplink at ${sat.uplinkStrength}% power status is ${sat.status}`;
+      });
+      return [weatherStr, ...satStrs];
+    }
+
+    // Geopolitical (Default)
+    if (news.length === 0) {
+      return [
+        "UN Security Council meeting scheduled for 0900Z regarding maritime dispute",
+        "Global crude futures surge 2.4% following supply chain disruptions in Hormuz",
+        "Diplomatic breakthrough reported in Alpine borders; ceasefire extended",
+        "Intelligence alert: Increased cyber activity detected from Eastern sector"
+      ];
+    }
+    return news.map(story => {
+      const timeStr = new Date(story.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return `[${timeStr}] ${story.region.toUpperCase()}: ${story.title}`;
+    });
+  };
+
+  useEffect(() => {
+    setCyberLogs(generateInitialCyberLogs(8));
+  }, []);
+
+  useEffect(() => {
+    // 1. Cyber Stream simulation
+    const cyberTimer = setInterval(() => {
+      setCyberLogs(prev => {
+        const newLog = generateCyberLog();
+        if (activeTab === 'cyber') {
+          audioAlerts?.playUpdateBlip();
+        }
+        return [newLog, ...prev.slice(0, 19)];
+      });
+    }, 6000);
+
+    // 2. Satellite telemetry simulation
+    const satTimer = setInterval(() => {
+      setSatellites(prev => {
+        const updated = updateSatelliteTelemetry(prev);
+        if (activeTab === 'space') {
+          audioAlerts?.playUpdateBlip();
+        }
+        return updated;
+      });
+    }, 4000);
+
+    // 3. Space Weather fluctuation
+    const weatherTimer = setInterval(() => {
+      if (Math.random() > 0.85) {
+        const flareLevels: SpaceWeather['solarFlareLevel'][] = ['QUIET', 'MODERATE', 'ACTIVE', 'SEVERE'];
+        const randomFlare = flareLevels[Math.floor(Math.random() * flareLevels.length)];
+        setSpaceWeather(prev => ({
+          ...prev,
+          solarFlareLevel: randomFlare,
+          geomagneticIndex: randomFlare === 'SEVERE' ? 'Kp-6' : randomFlare === 'ACTIVE' ? 'Kp-5' : 'Kp-3'
+        }));
+      }
+    }, 15000);
+
+    return () => {
+      clearInterval(cyberTimer);
+      clearInterval(satTimer);
+      clearInterval(weatherTimer);
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     async function loadData() {
@@ -91,22 +182,88 @@ export default function Home() {
             </div>
             
             <div className="min-h-[250px] flex-shrink-0 glass rounded-lg flex flex-col overflow-hidden">
-              <div className="px-4 py-2 border-b border-border bg-slate-900/80 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="text-primary" size={16} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Signal Feed</span>
+              {/* Tactical Tabs Header */}
+              <div className="px-4 py-1.5 border-b border-border bg-slate-900/80 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-1">
+                  {/* Tab 1: Geopolitical */}
+                  <button
+                    onClick={() => {
+                      setActiveTab('geopolitical');
+                      audioAlerts?.playUpdateBlip();
+                    }}
+                    className={`px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest font-mono flex items-center gap-2 border transition-all cursor-pointer ${
+                      activeTab === 'geopolitical'
+                        ? 'border-primary/50 bg-primary/10 text-primary shadow-[0_0_8px_rgba(6,182,212,0.15)]'
+                        : 'border-transparent text-secondary hover:text-foreground'
+                    }`}
+                  >
+                    <ShieldAlert size={12} />
+                    Geopolitical Signals
+                  </button>
+
+                  {/* Tab 2: Cyber */}
+                  <button
+                    onClick={() => {
+                      setActiveTab('cyber');
+                      audioAlerts?.playUpdateBlip();
+                    }}
+                    className={`px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest font-mono flex items-center gap-2 border transition-all cursor-pointer ${
+                      activeTab === 'cyber'
+                        ? 'border-primary/50 bg-primary/10 text-primary shadow-[0_0_8px_rgba(6,182,212,0.15)]'
+                        : 'border-transparent text-secondary hover:text-foreground'
+                    }`}
+                  >
+                    <Terminal size={12} />
+                    Cyber Surveillance
+                  </button>
+
+                  {/* Tab 3: Space */}
+                  <button
+                    onClick={() => {
+                      setActiveTab('space');
+                      audioAlerts?.playUpdateBlip();
+                    }}
+                    className={`px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest font-mono flex items-center gap-2 border transition-all cursor-pointer ${
+                      activeTab === 'space'
+                        ? 'border-primary/50 bg-primary/10 text-primary shadow-[0_0_8px_rgba(6,182,212,0.15)]'
+                        : 'border-transparent text-secondary hover:text-foreground'
+                    }`}
+                  >
+                    <Radio size={12} />
+                    Space Operations
+                  </button>
                 </div>
-                {selectedRegion && (
-                    <button 
+
+                {/* Filters / Region Reset */}
+                <div className="flex items-center gap-4">
+                  {selectedRegion && activeTab === 'geopolitical' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] text-cyan-400 font-mono">FILTER: {selectedRegion.toUpperCase()}</span>
+                      <button 
                         onClick={() => setSelectedRegion(null)}
-                        className="text-[10px] text-primary hover:underline"
-                    >
-                        RESET_FILTER
-                    </button>
-                )}
+                        className="text-[9px] text-primary font-mono hover:underline border border-primary/20 px-1.5 py-0.5 rounded bg-primary/5 cursor-pointer"
+                      >
+                        RESET
+                      </button>
+                    </div>
+                  )}
+                  {selectedRegion && activeTab !== 'geopolitical' && (
+                    <span className="text-[9px] text-secondary/60 font-mono italic">Global Matrix View</span>
+                  )}
+                </div>
               </div>
+
+              {/* Feed Content */}
               <div className="flex-1 overflow-y-auto">
-                <NewsFeed stories={news} loading={loading} />
+                {activeTab === 'geopolitical' && (
+                  <NewsFeed stories={news} loading={loading} />
+                )}
+                {activeTab === 'cyber' && (
+                  <CyberFeed logs={cyberLogs} />
+                )}
+                {activeTab === 'space' && (
+                  <SpaceFeed satellites={satellites} spaceWeather={spaceWeather} />
+                )}
               </div>
             </div>
           </div>
@@ -114,7 +271,7 @@ export default function Home() {
       </div>
 
       {/* Scrolling Ticker */}
-      <Ticker items={tickerItems} />
+      <Ticker items={getDynamicTickerItems()} />
     </main>
   );
 }

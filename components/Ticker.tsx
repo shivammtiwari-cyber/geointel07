@@ -37,7 +37,6 @@ export const Ticker: React.FC<TickerProps> = ({ items }) => {
       >
         {items.map((item, index) => (
           <div key={index} className="flex items-center gap-4 text-sm font-mono text-cyan-400">
-            <span className="text-secondary opacity-50">[{currentTime}]</span>
             {item}
             <span className="w-1.5 h-1.5 bg-primary/40 rounded-full" />
           </div>
@@ -45,7 +44,6 @@ export const Ticker: React.FC<TickerProps> = ({ items }) => {
         {/* Duplicate for seamless infinite loop */}
         {items.map((item, index) => (
           <div key={`dup-${index}`} className="flex items-center gap-4 text-sm font-mono text-cyan-400">
-            <span className="text-secondary opacity-50">[{currentTime}]</span>
             {item}
             <span className="w-1.5 h-1.5 bg-primary/40 rounded-full" />
           </div>
