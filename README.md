@@ -1,3 +1,5 @@
+live at: https://geointel07.vercel.app/
+
 # Geopolitical Intelligence Dashboard
 
 A production-ready "Command Center" dashboard built with Next.js 15, Tailwind CSS 4, and Framer Motion. This tool aggregates geopolitical news, performs automated sentiment analysis, and visualizes data on an interactive world map.
